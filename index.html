@@ -75,6 +75,14 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline
 .qopt.ok{border-color:var(--ok);font-weight:700}
 .qopt.no{border-color:var(--urgent);text-decoration:line-through}
 .qopt:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+.lvbox{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:20px}
+.lvtop{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:8px}
+#lvtitle{font-size:1.1rem}
+.bar{height:10px;border-radius:99px;background:var(--bg);border:1px solid var(--line);overflow:hidden}
+#lvfill{height:100%;width:0;background:var(--accent);transition:width .4s}
+.lvinfo{display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:8px;font-size:.85rem;color:var(--muted)}
+.lvbadges{margin-top:6px;font-size:1.3rem}
+.lvmsg{margin:6px 0 0;font-size:.9rem;color:var(--accent);min-height:1.3em}
 .w{font-weight:800;font-size:1.1rem}
 .mean{margin-left:8px;color:var(--accent)}
 .ex{display:block;color:var(--muted);font-size:.85rem;margin-top:2px}
@@ -100,6 +108,13 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline
   <h1>오늘의 중앙</h1>
   <p class="sub">시험 D-day, 영단어, 급식표를 한곳에서 확인해요.</p>
 
+  <section class="lvbox" aria-label="내 레벨">
+    <div class="lvtop"><strong id="lvtitle"></strong><button class="wtoggle" id="lvmute" type="button"></button></div>
+    <div class="bar" id="lvbar" role="progressbar" aria-label="다음 레벨까지" aria-valuemin="0" aria-valuemax="100"><div id="lvfill"></div></div>
+    <div class="lvinfo"><span id="lvxp"></span><span id="lvstreak"></span><span id="lvwords"></span></div>
+    <div class="lvbadges" id="lvbadges"></div>
+    <p class="lvmsg" id="lvmsg" aria-live="polite"></p>
+  </section>
   <button class="wtoggle" id="wshow" type="button" hidden style="margin-bottom:20px">오늘의 영단어 다시 보기</button>
   <section class="wordbox" id="wordbox" aria-label="오늘의 영단어">
     <div class="whead">
@@ -128,7 +143,7 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline
   </form>
 
   <ul id="list"></ul>
-  <p style="color:var(--muted);font-size:.8rem;text-align:center;margin-top:32px">마지막 업데이트: 영어 테스트 추가</p>
+  <p style="color:var(--muted);font-size:.8rem;text-align:center;margin-top:32px">마지막 업데이트: 레벨업 시스템 추가</p>
 </main>
 
 <button class="fab" id="mfab" type="button" aria-label="급식표 열기">🍚</button>
@@ -204,6 +219,129 @@ document.getElementById("form").addEventListener("submit", function (e) {
 });
 
 render();
+
+/* 레벨업 시스템 (이 기기 브라우저에 저장) */
+(function () {
+  var KEY = "jungang-level";
+  var S = { xp: 0, streak: 0, last: "", learned: [], ms: [], muted: false, td: { d: "", w: [] }, pb: "" };
+  try {
+    var raw = JSON.parse(localStorage.getItem(KEY) || "null");
+    if (raw) for (var k in S) if (raw[k] !== undefined) S[k] = raw[k];
+  } catch (e) {}
+  var TITLES = ["새싹", "연필", "노트", "책벌레", "단어박사", "영어고수", "중앙의 전설"];
+  var MILES = [[5, "🥉"], [10, "🥈"], [20, "🥇"], [30, "💎"], [40, "👑"]];
+  function $(id) { return document.getElementById(id); }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+  function dayKey(d) {
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+  function levelOf(xp) { return Math.floor(Math.sqrt(xp / 20)) + 1; }
+
+  var ctx = null;
+  function tone(freq, start, dur, type, vol) {
+    if (S.muted) return;
+    try {
+      ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
+      if (ctx.state === "suspended") ctx.resume();
+      var o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = type || "sine"; o.frequency.value = freq;
+      var t = ctx.currentTime + start;
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(vol || 0.2, t + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g); g.connect(ctx.destination);
+      o.start(t); o.stop(t + dur + 0.02);
+    } catch (e) {}
+  }
+  function sndRight() { tone(659, 0, 0.12, "sine"); tone(988, 0.1, 0.22, "sine"); }
+  function sndWrong() { tone(220, 0, 0.22, "sawtooth", 0.12); tone(165, 0.18, 0.3, "sawtooth", 0.12); }
+  function sndLevel(delay) {
+    [523, 659, 784, 1047].forEach(function (f, i) { tone(f, (delay || 0) + i * 0.12, 0.25, "triangle"); });
+  }
+
+  function say(t) { $("lvmsg").textContent = t; }
+  function addXP(n) {
+    var before = levelOf(S.xp);
+    S.xp += n;
+    var up = levelOf(S.xp) > before;
+    if (up) sndLevel(0.3);
+    return up;
+  }
+  function render() {
+    var lv = levelOf(S.xp), base = 20 * (lv - 1) * (lv - 1), next = 20 * lv * lv;
+    var pct = Math.round((S.xp - base) / (next - base) * 100);
+    $("lvtitle").textContent = "Lv." + lv + " " + TITLES[Math.min(lv - 1, TITLES.length - 1)];
+    $("lvfill").style.width = pct + "%";
+    $("lvbar").setAttribute("aria-valuenow", pct);
+    $("lvxp").textContent = "XP " + S.xp + " / " + next;
+    $("lvstreak").textContent = "🔥 연속 " + S.streak + "일";
+    $("lvwords").textContent = "📖 외운 단어 " + S.learned.length + "개";
+    var b = $("lvbadges"); b.innerHTML = "";
+    MILES.forEach(function (m) {
+      var s = document.createElement("span");
+      s.textContent = m[1];
+      s.title = "외운 단어 " + m[0] + "개";
+      s.style.opacity = S.ms.indexOf(m[0]) >= 0 ? "1" : "0.2";
+      s.style.marginRight = "6px";
+      b.appendChild(s);
+    });
+    $("lvmute").textContent = S.muted ? "🔇 소리 꺼짐" : "🔊 소리 켜짐";
+  }
+
+  $("lvmute").onclick = function () { S.muted = !S.muted; save(); render(); };
+
+  var today = dayKey(new Date());
+  if (S.last !== today) {
+    var y = new Date(); y.setDate(y.getDate() - 1);
+    S.streak = S.last === dayKey(y) ? S.streak + 1 : 1;
+    S.last = today;
+    var gain = 10 + Math.min(S.streak, 7) * 2;
+    var up0 = addXP(gain);
+    say("출석 체크! 연속 " + S.streak + "일 +" + gain + " XP" + (up0 ? " · 🎉 레벨 업!" : ""));
+    save();
+  }
+  render();
+
+  window.JG = {
+    right: function (w) {
+      sndRight();
+      var t = dayKey(new Date());
+      if (S.td.d !== t) S.td = { d: t, w: [] };
+      var parts = [];
+      if (S.td.w.indexOf(w) < 0) {
+        S.td.w.push(w);
+        parts.push("정답! +5 XP");
+        if (addXP(5)) parts.push("🎉 레벨 업!");
+      } else {
+        parts.push("정답! (오늘 이 단어의 XP는 이미 받았어요)");
+      }
+      if (S.learned.indexOf(w) < 0) {
+        S.learned.push(w);
+        MILES.forEach(function (m) {
+          if (S.learned.length >= m[0] && S.ms.indexOf(m[0]) < 0) {
+            S.ms.push(m[0]);
+            parts.push(m[1] + " 배지 획득! +20 XP");
+            if (addXP(20)) parts.push("🎉 레벨 업!");
+          }
+        });
+      }
+      say(parts.join(" · ")); save(); render();
+    },
+    wrong: function () {
+      sndWrong();
+      say("아쉽아요! 다음에는 맞혀 보세요.");
+    },
+    finish: function (score, total) {
+      var t = dayKey(new Date());
+      if (total > 0 && score === total && S.pb !== t) {
+        S.pb = t;
+        var up = addXP(10);
+        say("만점 보너스 +10 XP 🎉" + (up ? " · 레벨 업!" : ""));
+        save(); render();
+      }
+    }
+  };
+})();
 
 /* 오늘의 영단어: 날짜마다 5개씩 바뀜 (모두에게 같은 단어) */
 (function () {
@@ -306,6 +444,7 @@ render();
   function ask() {
     quizBox.innerHTML = "";
     if (qi >= cur.length) {
+      if (window.JG) JG.finish(qscore, cur.length);
       var res = document.createElement("p");
       res.className = "qword";
       res.textContent = "결과: " + qscore + " / " + cur.length;
@@ -336,7 +475,7 @@ render();
           all[x].disabled = true;
           if (all[x].textContent === q[1]) all[x].classList.add("ok");
         }
-        if (text === q[1]) qscore++; else o.classList.add("no");
+        if (text === q[1]) { qscore++; if (window.JG) JG.right(q[0]); } else { o.classList.add("no"); if (window.JG) JG.wrong(); }
         setTimeout(function () { qi++; ask(); }, 1000);
       };
       quizBox.appendChild(o);
