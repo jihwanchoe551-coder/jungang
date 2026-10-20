@@ -101,25 +101,72 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline
 .mnav{width:40px;height:40px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);font-size:1rem;cursor:pointer}
 #mtext{width:100%;height:210px;resize:vertical;font:inherit;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text)}
 .mhint{color:var(--muted);font-size:.8rem;margin:6px 0 0}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:4px}
+.clock{text-align:right;font-variant-numeric:tabular-nums;line-height:1.25;flex:none}
+.clock b{display:block;font-size:1.1rem}
+.clock span{font-size:.75rem;color:var(--muted)}
+main{padding-top:20px}
+h1{font-size:1.5rem;letter-spacing:-.02em}
+.lvbox,.wordbox,form.add,.item,.meal{border-radius:16px;box-shadow:0 1px 3px rgba(16,24,40,.07)}
+.lvbox,.wordbox{padding:18px}
+.wtoggle{border-radius:999px;padding:7px 13px;font-weight:600}
+.wtoggle:hover{border-color:var(--accent)}
+.btn{border-radius:10px;padding:12px}
+.qopt{border-radius:12px}
+.whead h2{font-size:1.05rem}
+.wordbox.testing #words,.wordbox.testing #wnext,.wordbox.testing #wtoggle,.wordbox.testing #wclose{display:none}
+.lvbox{position:relative}
+.lvquest{margin-top:8px;font-size:.85rem;padding:6px 10px;border-radius:10px;background:var(--bg);border:1px solid var(--line)}
+#lvfill{background:linear-gradient(90deg,var(--accent),var(--ok))}
+.lvup{position:fixed;inset:0;z-index:50;pointer-events:none;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.lvup-card{background:var(--surface);border:2px solid var(--accent);border-radius:20px;padding:22px 34px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.3);animation:lvpop .5s cubic-bezier(.2,1.4,.4,1)}
+.lvup-big{font-size:1.6rem;font-weight:900;color:var(--accent);letter-spacing:.05em}
+.lvup-lv{font-size:1.2rem;font-weight:800;margin-top:4px}
+.conf{position:absolute;top:-30px;font-size:1.4rem;animation:conf 2.4s linear forwards}
+.xppop{position:absolute;right:130px;top:14px;font-weight:800;color:var(--ok);animation:xpup 1s ease-out forwards;pointer-events:none}
+@keyframes lvpop{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes conf{to{transform:translateY(110vh) rotate(360deg)}}
+@keyframes xpup{from{opacity:1;transform:translateY(0)}to{opacity:0;transform:translateY(-24px)}}
+@media (prefers-reduced-motion:reduce){.conf{display:none}.lvup-card,.xppop{animation:none}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:20px;box-shadow:0 1px 3px rgba(16,24,40,.07)}
+.tml{list-style:none;margin:0 0 8px;padding:0}.tml li{padding:6px 0;border-top:1px solid var(--line);font-size:.9rem}.tml li:first-child{border-top:0}.tml li.warn{color:var(--urgent);font-weight:700}
+details summary{cursor:pointer;color:var(--muted);font-size:.85rem;padding:6px 0}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.chip{font:inherit;font-size:.8rem;padding:6px 10px;border:1px solid var(--line);border-radius:999px;background:var(--bg);color:var(--text);cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);color:var(--accent-text);border-color:var(--accent)}
+.tbig{font-size:2.6rem;font-weight:800;text-align:center;font-variant-numeric:tabular-nums;margin:6px 0 10px}
+#timer .wbtns{justify-content:center}
+.wkbars{display:flex;gap:8px;align-items:flex-end;height:80px;margin:8px 0}
+.wkc{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;font-size:.7rem;color:var(--muted)}
+.wkb{width:100%;max-width:28px;background:var(--accent);border-radius:6px 6px 2px 2px}
+.alert{margin:0 0 16px;padding:10px 14px;border-radius:12px;background:var(--surface);border:1px solid var(--urgent);color:var(--urgent);font-weight:700;font-size:.9rem}
+.cform{display:grid;gap:8px;margin-top:8px}
+.wordbox.testing #wrev,.wordbox.testing #wquiz,.wordbox.testing #custom{display:none}
 </style>
 </head>
 <body>
 <main>
-  <h1>오늘의 중앙</h1>
+  <header class="top"><h1>오늘의 중앙</h1><div class="clock" id="clock" aria-label="현재 시각"></div></header>
   <p class="sub">시험 D-day, 영단어, 급식표를 한곳에서 확인해요.</p>
+  <div class="alert" id="dalert" hidden></div>
 
   <section class="lvbox" aria-label="내 레벨">
     <div class="lvtop"><strong id="lvtitle"></strong><button class="wtoggle" id="lvmute" type="button"></button></div>
     <div class="bar" id="lvbar" role="progressbar" aria-label="다음 레벨까지" aria-valuemin="0" aria-valuemax="100"><div id="lvfill"></div></div>
     <div class="lvinfo"><span id="lvxp"></span><span id="lvstreak"></span><span id="lvwords"></span></div>
+    <div class="lvquest" id="lvquest"></div>
     <div class="lvbadges" id="lvbadges"></div>
     <p class="lvmsg" id="lvmsg" aria-live="polite"></p>
   </section>
   <button class="wtoggle" id="wshow" type="button" hidden style="margin-bottom:20px">오늘의 영단어 다시 보기</button>
+  <section class="card" id="todaymeal" aria-label="오늘의 급식"><div class="whead"><h2>오늘의 급식 🍚</h2></div><ul id="tmlist" class="tml"></ul><details><summary>알레르기 설정</summary><div id="alg" class="chips"></div><p class="mhint">체크한 번호가 들어간 메뉴에 ⚠️가 표시돼요.</p></details></section>
+  <section class="card" id="timer" aria-label="공부 타이머"><div class="whead"><h2>공부 타이머 ⏱️</h2><button class="wtoggle" id="tmode" type="button"></button></div><div class="tbig" id="tmr"></div><div class="wbtns"><button class="wtoggle" id="tgo" type="button"></button><button class="wtoggle" id="treset" type="button">초기화</button></div><p class="mhint">집중 25분을 끝까지 하면 +15 XP!</p></section>
+  <section class="card" id="wk" aria-label="이번 주 기록"></section>
   <section class="wordbox" id="wordbox" aria-label="오늘의 영단어">
     <div class="whead">
       <h2>오늘의 영단어 5개</h2>
       <div class="wbtns">
+        <button class="wtoggle" id="wrev" type="button">틀린 단어 복습</button>
         <button class="wtoggle" id="wquiz" type="button">영어 테스트</button>
         <button class="wtoggle" id="wnext" type="button">다른 단어</button>
         <button class="wtoggle" id="wtoggle" type="button">뜻 가리기</button>
@@ -128,6 +175,7 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline
     </div>
     <ul id="words"></ul>
     <div class="quiz" id="quiz" hidden></div>
+    <details id="custom"><summary>＋ 나만의 단어 추가</summary><div class="cform"><input id="cw" placeholder="영단어" maxlength="30"><input id="cm" placeholder="뜻" maxlength="30"><input id="ce" placeholder="예문 (선택)" maxlength="80"><button class="wtoggle" id="cadd" type="button">추가</button></div><p class="mhint" id="cmsg"></p></details>
   </section>
 
   <form class="add" id="form">
@@ -143,7 +191,7 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--accent);outline
   </form>
 
   <ul id="list"></ul>
-  <p style="color:var(--muted);font-size:.8rem;text-align:center;margin-top:32px">마지막 업데이트: 레벨업 시스템 추가</p>
+  <p style="color:var(--muted);font-size:.8rem;text-align:center;margin-top:32px">마크 1.3 버전 · 급식·타이머·복습 추가</p>
 </main>
 
 <button class="fab" id="mfab" type="button" aria-label="급식표 열기">🍚</button>
@@ -220,15 +268,25 @@ document.getElementById("form").addEventListener("submit", function (e) {
 
 render();
 
+window.JGX = (function () {
+  var K = "jg-extra", X = { wrong: [], custom: [], allergy: [], hist: {}, acc: {} };
+  try { var r = JSON.parse(localStorage.getItem(K) || "null"); if (r) for (var k in X) if (r[k] !== undefined) X[k] = r[k]; } catch (e) {}
+  return {
+    X: X,
+    save: function () { try { localStorage.setItem(K, JSON.stringify(X)); } catch (e) {} },
+    tk: function () { var d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+  };
+})();
+
 /* 레벨업 시스템 (이 기기 브라우저에 저장) */
 (function () {
   var KEY = "jungang-level";
-  var S = { xp: 0, streak: 0, last: "", learned: [], ms: [], muted: false, td: { d: "", w: [] }, pb: "" };
+  var S = { xp: 0, streak: 0, last: "", learned: [], ms: [], muted: false, td: { d: "", w: [] }, pb: "", qd: "" };
   try {
     var raw = JSON.parse(localStorage.getItem(KEY) || "null");
     if (raw) for (var k in S) if (raw[k] !== undefined) S[k] = raw[k];
   } catch (e) {}
-  var TITLES = ["새싹", "연필", "노트", "책벌레", "단어박사", "영어고수", "중앙의 전설"];
+  var TITLES = ["새싹", "연필", "노트", "책벌레", "단어박사", "영어고수", "우등생", "학급의 별", "중앙의 영웅", "중앙의 전설"];
   var MILES = [[5, "🥉"], [10, "🥈"], [20, "🥇"], [30, "💎"], [40, "👑"]];
   function $(id) { return document.getElementById(id); }
   function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
@@ -259,12 +317,32 @@ render();
     [523, 659, 784, 1047].forEach(function (f, i) { tone(f, (delay || 0) + i * 0.12, 0.25, "triangle"); });
   }
 
+  function celebrate(lv) {
+    var o = document.createElement("div"); o.className = "lvup"; o.setAttribute("role", "status");
+    var c = document.createElement("div"); c.className = "lvup-card";
+    var a = document.createElement("div"); a.className = "lvup-big"; a.textContent = "LEVEL UP!";
+    var b = document.createElement("div"); b.className = "lvup-lv"; b.textContent = "Lv." + lv + " " + TITLES[Math.min(lv - 1, TITLES.length - 1)];
+    c.appendChild(a); c.appendChild(b); o.appendChild(c);
+    var em = ["🎉", "✨", "⭐", "🎊"];
+    for (var i = 0; i < 20; i++) {
+      var s = document.createElement("span"); s.className = "conf"; s.textContent = em[i % 4];
+      s.style.left = (Math.random() * 100) + "%"; s.style.animationDelay = (Math.random() * 0.6) + "s";
+      o.appendChild(s);
+    }
+    document.body.appendChild(o);
+    setTimeout(function () { if (o.parentNode) o.parentNode.removeChild(o); }, 3000);
+  }
+  function pop(n) {
+    var box = document.querySelector(".lvbox"), p = document.createElement("span");
+    p.className = "xppop"; p.textContent = "+" + n + " XP"; box.appendChild(p);
+    setTimeout(function () { if (p.parentNode) p.parentNode.removeChild(p); }, 1000);
+  }
   function say(t) { $("lvmsg").textContent = t; }
   function addXP(n) {
     var before = levelOf(S.xp);
-    S.xp += n;
+    S.xp += n; pop(n); var hk = dayKey(new Date()); JGX.X.hist[hk] = (JGX.X.hist[hk] || 0) + n; JGX.save();
     var up = levelOf(S.xp) > before;
-    if (up) sndLevel(0.3);
+    if (up) { sndLevel(0.3); celebrate(levelOf(S.xp)); }
     return up;
   }
   function render() {
@@ -273,7 +351,9 @@ render();
     $("lvtitle").textContent = "Lv." + lv + " " + TITLES[Math.min(lv - 1, TITLES.length - 1)];
     $("lvfill").style.width = pct + "%";
     $("lvbar").setAttribute("aria-valuenow", pct);
-    $("lvxp").textContent = "XP " + S.xp + " / " + next;
+    $("lvxp").textContent = "XP " + S.xp + " · 다음 레벨까지 " + (next - S.xp);
+    var t0 = dayKey(new Date()), qn = S.td.d === t0 ? S.td.w.length : 0;
+    $("lvquest").textContent = S.qd === t0 ? "🎯 오늘의 미션 완료!" : "🎯 오늘의 미션: 단어 3개 맞히기 (" + Math.min(qn, 3) + "/3) · +15 XP";
     $("lvstreak").textContent = "🔥 연속 " + S.streak + "일";
     $("lvwords").textContent = "📖 외운 단어 " + S.learned.length + "개";
     var b = $("lvbadges"); b.innerHTML = "";
@@ -311,6 +391,7 @@ render();
       if (S.td.w.indexOf(w) < 0) {
         S.td.w.push(w);
         parts.push("정답! +5 XP");
+        if (S.td.w.length >= 3 && S.qd !== t) { S.qd = t; parts.push("🎯 오늘의 미션 완료! +15 XP"); if (addXP(15)) parts.push("🎉 레벨 업!"); }
         if (addXP(5)) parts.push("🎉 레벨 업!");
       } else {
         parts.push("정답! (오늘 이 단어의 XP는 이미 받았어요)");
@@ -327,6 +408,7 @@ render();
       }
       say(parts.join(" · ")); save(); render();
     },
+    bonus: function (n, m) { sndRight(); var u = addXP(n); say(m + " +" + n + " XP" + (u ? " · 🎉 레벨 업!" : "")); save(); render(); },
     wrong: function () {
       sndWrong();
       say("아쉽아요! 다음에는 맞혀 보세요.");
@@ -343,6 +425,70 @@ render();
   };
 })();
 
+/* 공부 타이머 */
+(function () {
+  var el = document.getElementById("tmr"), bt = document.getElementById("tgo"), md = document.getElementById("tmode"), rs = document.getElementById("treset");
+  var M = [["집중", 25], ["휴식", 5]], mi = 0, left = 25 * 60, end = 0, run = false, id = 0;
+  function fmt(s) { return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0"); }
+  function paint() { el.textContent = fmt(left); md.textContent = M[mi][0] + " " + M[mi][1] + "분"; bt.textContent = run ? "일시정지" : "시작"; }
+  function tk2() {
+    left = Math.max(0, Math.round((end - Date.now()) / 1000));
+    if (left <= 0) {
+      clearInterval(id); run = false;
+      if (mi === 0 && window.JG) JG.bonus(15, "집중 25분 완료!");
+      mi = 1 - mi; left = M[mi][1] * 60;
+      try { if (navigator.vibrate) navigator.vibrate(300); } catch (e) {}
+    }
+    paint();
+  }
+  bt.onclick = function () { if (run) { clearInterval(id); run = false; paint(); return; } end = Date.now() + left * 1000; run = true; id = setInterval(tk2, 500); paint(); };
+  rs.onclick = function () { clearInterval(id); run = false; left = M[mi][1] * 60; paint(); };
+  md.onclick = function () { clearInterval(id); run = false; mi = 1 - mi; left = M[mi][1] * 60; paint(); };
+  paint();
+})();
+
+/* 현재 시각 */
+(function () {
+  var c = document.getElementById("clock");
+  var b = document.createElement("b"), s = document.createElement("span");
+  c.appendChild(b); c.appendChild(s);
+  var D = ["일", "월", "화", "수", "목", "금", "토"];
+  function p(n) { return String(n).padStart(2, "0"); }
+  var wkEl = document.getElementById("wk"), sig = "", al = document.getElementById("dalert");
+  function wk() {
+    var X = JGX.X, d = new Date(), rows = [], mx = 1, s = "", ar = 0, at = 0;
+    for (var i = 6; i >= 0; i--) {
+      var x = new Date(d.getFullYear(), d.getMonth(), d.getDate() - i), k = x.getFullYear() + "-" + p(x.getMonth() + 1) + "-" + p(x.getDate()), v = X.hist[k] || 0, a = X.acc[k] || [0, 0];
+      ar += a[0]; at += a[1]; rows.push([D[x.getDay()], v]); mx = Math.max(mx, v); s += v + ",";
+    }
+    s += ar + "/" + at;
+    if (s === sig) return;
+    sig = s; wkEl.innerHTML = "";
+    var h = document.createElement("h2"); h.style.cssText = "font-size:1.05rem;margin:0"; h.textContent = "이번 주 기록 📊";
+    var bars = document.createElement("div"); bars.className = "wkbars";
+    rows.forEach(function (r) {
+      var c = document.createElement("div"); c.className = "wkc";
+      var b = document.createElement("div"); b.className = "wkb"; b.style.height = Math.max(4, Math.round(r[1] / mx * 56)) + "px"; b.title = r[1] + " XP";
+      var l = document.createElement("span"); l.textContent = r[0];
+      c.appendChild(b); c.appendChild(l); bars.appendChild(c);
+    });
+    var t = document.createElement("p"); t.className = "mhint";
+    t.textContent = "최근 7일 XP · 정답률 " + (at ? Math.round(ar / at * 100) + "% (" + ar + "/" + at + ")" : "기록 없음");
+    wkEl.appendChild(h); wkEl.appendChild(bars); wkEl.appendChild(t);
+  }
+  function dAlert() {
+    var u = items.filter(function (i) { var n = daysLeft(i.date); return n >= 0 && n <= 7; }).sort(function (a, b) { return daysLeft(a.date) - daysLeft(b.date); }).slice(0, 2);
+    var t = u.map(function (i) { return i.title + " " + label(daysLeft(i.date)); }).join(" · ");
+    al.hidden = !t; al.textContent = t ? "⏰ " + t : "";
+  }
+  function tick() {
+    var d = new Date(), h = d.getHours();
+    b.textContent = (h < 12 ? "오전 " : "오후 ") + (h % 12 || 12) + ":" + p(d.getMinutes()) + ":" + p(d.getSeconds());
+    s.textContent = (d.getMonth() + 1) + "월 " + d.getDate() + "일 (" + D[d.getDay()] + ")";
+  }
+  tick(); wk(); dAlert(); setInterval(function () { tick(); wk(); dAlert(); }, 1000);
+})();
+
 /* 오늘의 영단어: 날짜마다 5개씩 바뀜 (모두에게 같은 단어) */
 (function () {
   var W = [
@@ -356,7 +502,7 @@ render();
     ["expand", "확장하다, 넓히다", "The company plans to expand overseas."],
     ["nevertheless", "그럼에도 불구하고", "It was raining; nevertheless, we went out."],
     ["emerge", "나타나다, 드러나다", "The sun emerged from behind the clouds."],
-    ["hesitate", "망설이다, 주저하다", "Don't hesitate to ask questions."],
+    ["hesitate", "망설이다, 주저하다", "Don’t hesitate to ask questions."],
     ["participate", "참여하다", "Many students participate in club activities."],
     ["inevitable", "피할 수 없는", "Change is inevitable."],
     ["significant", "중요한, 상당한", "There was a significant difference in scores."],
@@ -364,7 +510,7 @@ render();
     ["rapid", "빠른, 급속한", "Technology has made rapid progress."],
     ["struggle", "애쓰다, 고군분투하다", "He struggled to finish the race."],
     ["predict", "예측하다", "No one can predict the future."],
-    ["maintain", "유지하다", "It's hard to maintain good habits."],
+    ["maintain", "유지하다", "It’s hard to maintain good habits."],
     ["ancient", "고대의, 아주 오래된", "We visited an ancient temple."],
     ["reputation", "평판, 명성", "The school has a good reputation."],
     ["require", "요구하다, 필요로 하다", "This job requires patience."],
@@ -385,10 +531,52 @@ render();
     ["isolate", "고립시키다, 분리하다", "Sick patients were isolated from others."],
     ["contrast", "대조, 차이", "The contrast between the two is clear."],
     ["suffer", "고통받다, 시달리다", "Many people suffer from stress."],
-    ["advantage", "장점, 이점", "Being tall is an advantage in basketball."]
+    ["advantage", "장점, 이점", "Being tall is an advantage in basketball."],
+    ["accurate", "정확한", "The map is accurate and easy to read."],
+    ["achieve", "이루다, 달성하다", "She worked hard to achieve her goal."],
+    ["adapt", "적응하다", "Animals adapt to their environment."],
+    ["admit", "인정하다", "He admitted that he made a mistake."],
+    ["affect", "영향을 미치다", "Weather can affect your mood."],
+    ["aware", "알고 있는, 인식하는", "Are you aware of the problem?"],
+    ["capable", "능력 있는, ~할 수 있는", "She is capable of solving it alone."],
+    ["cause", "원인; 일으키다", "Smoking can cause serious illness."],
+    ["challenge", "도전; 도전하다", "Learning a language is a challenge."],
+    ["claim", "주장하다", "He claimed that he saw a UFO."],
+    ["compare", "비교하다", "Compare the two answers carefully."],
+    ["complain", "불평하다", "Stop complaining and start working."],
+    ["confident", "자신 있는", "I feel confident about the test."],
+    ["convince", "설득하다, 납득시키다", "I convinced him to join us."],
+    ["damage", "손상; 손상시키다", "The storm damaged many houses."],
+    ["decrease", "줄다, 감소하다", "The number of students decreased."],
+    ["demand", "요구하다; 수요", "Workers demanded higher pay."],
+    ["depend on", "~에 달려 있다", "It depends on the weather."],
+    ["describe", "묘사하다, 설명하다", "Can you describe your best friend?"],
+    ["destroy", "파괴하다", "The fire destroyed the forest."],
+    ["determine", "결정하다, 알아내다", "Tests will determine your level."],
+    ["develop", "발전시키다, 개발하다", "They develop new apps for phones."],
+    ["device", "장치, 기기", "This device saves a lot of energy."],
+    ["discover", "발견하다", "Scientists discovered a new planet."],
+    ["distance", "거리", "The distance to school is two kilometers."],
+    ["divide", "나누다", "Divide the cake into six pieces."],
+    ["effort", "노력", "Success takes a lot of effort."],
+    ["encourage", "격려하다, 장려하다", "Teachers encourage students to read."],
+    ["environment", "환경", "We must protect the environment."],
+    ["essential", "필수적인", "Water is essential for life."],
+    ["estimate", "추정하다; 추정치", "I estimate the trip will take an hour."],
+    ["exchange", "교환하다", "We exchanged phone numbers."],
+    ["explore", "탐험하다, 탐구하다", "Let us explore the island."],
+    ["fortunate", "운이 좋은", "We were fortunate to have good weather."],
+    ["generous", "관대한, 후한", "He is generous with his time."],
+    ["guarantee", "보장하다", "I can’t guarantee the result."],
+    ["habit", "습관", "Reading every day is a good habit."],
+    ["honest", "정직한", "Please be honest with me."],
+    ["ignore", "무시하다", "Don’t ignore the warning signs."],
+    ["improve", "향상시키다, 나아지다", "My English has improved a lot."],
+    ["increase", "늘다, 증가하다", "Prices increase every year."]
   ];
   var d = new Date();
   var day = Math.floor(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000);
+  JGX.X.custom.forEach(function (c) { W.push(c); });
   var start = (day * 5) % W.length, shift = 0, cur = [];
   var ul = document.getElementById("words");
   function speak(t) {
@@ -426,6 +614,31 @@ render();
   }
   }
   build();
+  function updRev() { document.getElementById("wrev").textContent = "틀린 단어 복습 (" + JGX.X.wrong.length + ")"; }
+  function rec(q, ok) {
+    var X = JGX.X, t = JGX.tk(), a = X.acc[t] || (X.acc[t] = [0, 0]);
+    a[1]++;
+    if (ok) { a[0]++; var i = X.wrong.indexOf(q[0]); if (i >= 0) X.wrong.splice(i, 1); }
+    else if (X.wrong.indexOf(q[0]) < 0) X.wrong.push(q[0]);
+    JGX.save(); updRev();
+  }
+  function startReview() {
+    var L = [];
+    JGX.X.wrong.forEach(function (s) { for (var i = 0; i < W.length; i++) if (W[i][0] === s) { L.push(W[i]); break; } });
+    if (!L.length) { quizBox.hidden = false; quizBox.textContent = "복습할 틀린 단어가 없어요 👏"; return; }
+    if (!rv) orig = cur;
+    cur = L.slice(0, 10); rv = true; startQuiz();
+  }
+  document.getElementById("wrev").onclick = startReview;
+  document.getElementById("cadd").onclick = function () {
+    var w = document.getElementById("cw"), m = document.getElementById("cm"), e = document.getElementById("ce"), g = document.getElementById("cmsg");
+    if (!w.value.trim() || !m.value.trim()) { g.textContent = "단어와 뜻을 모두 적어 주세요."; return; }
+    var it = [w.value.trim(), m.value.trim(), e.value.trim()];
+    JGX.X.custom.push(it); W.push(it); JGX.save();
+    w.value = m.value = e.value = "";
+    g.textContent = "추가했어요! 내 단어 " + JGX.X.custom.length + "개 (퀴즈와 오늘의 단어에 섞여 나와요)";
+  };
+  updRev();
   var tg = document.getElementById("wtoggle");
   tg.onclick = function () {
     var hide = ul.classList.toggle("hide");
@@ -434,7 +647,7 @@ render();
     for (var j = 0; j < rows.length; j++) rows[j].classList.remove("show");
   };
 
-  var quizBox = document.getElementById("quiz"), qi = 0, qscore = 0;
+  var quizBox = document.getElementById("quiz"), qi = 0, qscore = 0, rv = false, orig = null;
   function shuffle(a) {
     for (var i = a.length - 1; i > 0; i--) {
       var j = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[j]; a[j] = t;
@@ -444,7 +657,7 @@ render();
   function ask() {
     quizBox.innerHTML = "";
     if (qi >= cur.length) {
-      if (window.JG) JG.finish(qscore, cur.length);
+      if (window.JG && !rv) JG.finish(qscore, cur.length);
       var res = document.createElement("p");
       res.className = "qword";
       res.textContent = "결과: " + qscore + " / " + cur.length;
@@ -454,7 +667,7 @@ render();
       again.type = "button"; again.className = "wtoggle"; again.textContent = "다시 풀기"; again.onclick = startQuiz;
       var close = document.createElement("button");
       close.type = "button"; close.className = "wtoggle"; close.style.marginLeft = "6px"; close.textContent = "테스트 닫기";
-      close.onclick = function () { quizBox.hidden = true; };
+      close.onclick = function () { if (rv) { cur = orig; rv = false; } quizBox.hidden = true; document.getElementById("wordbox").classList.remove("testing"); };
       quizBox.appendChild(res); quizBox.appendChild(msg); quizBox.appendChild(again); quizBox.appendChild(close);
       return;
     }
@@ -475,13 +688,13 @@ render();
           all[x].disabled = true;
           if (all[x].textContent === q[1]) all[x].classList.add("ok");
         }
-        if (text === q[1]) { qscore++; if (window.JG) JG.right(q[0]); } else { o.classList.add("no"); if (window.JG) JG.wrong(); }
+        if (text === q[1]) { qscore++; rec(q, true); if (window.JG) JG.right(q[0]); } else { o.classList.add("no"); rec(q, false); if (window.JG) JG.wrong(); }
         setTimeout(function () { qi++; ask(); }, 1000);
       };
       quizBox.appendChild(o);
     });
   }
-  function startQuiz() { qi = 0; qscore = 0; quizBox.hidden = false; ask(); }
+  function startQuiz() { qi = 0; qscore = 0; quizBox.hidden = false; document.getElementById("wordbox").classList.add("testing"); ask(); }
   document.getElementById("wquiz").onclick = startQuiz;
   document.getElementById("wnext").onclick = function () {
     shift += 5; build(); quizBox.hidden = true;
@@ -522,6 +735,36 @@ render();
     "2026-10-28": "소시지꼬마김밥 (2.5.6.10.15.16)|황태채달걀국 (1.5.6)|치즈라볶이(분식) (1.2.5.6.10.12.13.15.16)|들기름김치볶음 (9)|고추김말이튀김 (1.5.6.16)|깍둑기(완) (9)|과일음료",
     "2026-10-29": "찰옥수수알밥|햄모든찌개 (1.2.5.6.9.10.12.13.15.16.18)|꽈리고추메추리알조림 (1.5.6.13)|무생채 (13)|몬스터후라이드오징어 (1.5.6.17)|총각김치 (9)|오리훈제샐러드 (1.5.6.13.18)"
   };
+  var AL = (JGX.X.allergy || []).slice();
+  var ANAME = ["난류", "우유", "메밀", "땅콩", "대두", "밀", "고등어", "게", "새우", "돼지고기", "복숭아", "토마토", "아황산류", "호두", "닭고기", "쇠고기", "오징어", "조개류", "잣"];
+  function warn(item) {
+    var m = item.match(/\(([\d.]+)\)/);
+    if (!m) return false;
+    return m[1].split(".").some(function (x) { return AL.indexOf(+x) >= 0; });
+  }
+  function tmRender() {
+    var ul = document.getElementById("tmlist"); ul.innerHTML = "";
+    var t = MENU[JGX.tk()];
+    if (!t) { var e = document.createElement("li"); e.textContent = "오늘은 급식 정보가 없어요."; ul.appendChild(e); return; }
+    t.split("|").forEach(function (it) {
+      var li = document.createElement("li"), w = warn(it);
+      li.textContent = (w ? "⚠️ " : "") + it; if (w) li.className = "warn";
+      ul.appendChild(li);
+    });
+  }
+  var chips = document.getElementById("alg");
+  ANAME.forEach(function (nm, i) {
+    var b = document.createElement("button"); b.type = "button"; b.className = "chip"; b.textContent = (i + 1) + " " + nm;
+    b.setAttribute("aria-pressed", AL.indexOf(i + 1) >= 0 ? "true" : "false");
+    b.onclick = function () {
+      var k = AL.indexOf(i + 1);
+      if (k >= 0) AL.splice(k, 1); else AL.push(i + 1);
+      b.setAttribute("aria-pressed", k < 0 ? "true" : "false");
+      JGX.X.allergy = AL.slice(); JGX.save(); tmRender(); show();
+    };
+    chips.appendChild(b);
+  });
+  tmRender();
   var fab = document.getElementById("mfab"), box = document.getElementById("meal");
   var lab = document.getElementById("mlabel"), ta = document.getElementById("mtext");
   var n = new Date(), cur = new Date(n.getFullYear(), n.getMonth(), n.getDate());
@@ -532,7 +775,7 @@ render();
   function show() {
     lab.textContent = (cur.getMonth() + 1) + "월 " + cur.getDate() + "일 (" + names[cur.getDay()] + ")";
     var t = MENU[key()];
-    ta.value = t ? t.split("|").join("\n") : "등록된 급식 정보가 없어요.\n(주말·휴일이거나 아직 올라오지 않은 날이에요.)";
+    ta.value = t ? t.split("|").map(function (x) { return (warn(x) ? "⚠️ " : "") + x; }).join("\n") : "등록된 급식 정보가 없어요.\n(주말·휴일이거나 아직 올라오지 않은 날이에요.)";
   }
   document.getElementById("mprev").onclick = function () { cur.setDate(cur.getDate() - 1); show(); };
   document.getElementById("mnext").onclick = function () { cur.setDate(cur.getDate() + 1); show(); };
